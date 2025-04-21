@@ -1,5 +1,4 @@
 import base64
-import time
 import requests
 import json
 from datetime import datetime
@@ -37,22 +36,11 @@ class ImageGenerator:
         data = response.json()
         return data['uuid']
 
-    def check_generation(self, request_id, attempts=10, delay=10):
+    def check_generation(self, request_id):
         response = requests.get(self.URL + 'key/api/v1/pipeline/status/' + request_id, headers=self.AUTH_HEADERS)
         data = response.json()
         if data['status'] == 'DONE':
             return data['result']['files']
-        '''
-        while attempts > 0:
-            response = requests.get(self.URL + 'key/api/v1/pipeline/status/' + request_id, headers=self.AUTH_HEADERS)
-            data = response.json()
-            if data['status'] == 'DONE':
-                print("Изображение готово!")
-                return data['result']['files']
-            print(f"Изображение еще не готово. Осталось {delay * attempts} сек.")
-            attempts -= 1
-            time.sleep(delay)
-        '''
 
     def save_image(self, images):
         image_base64 = images[0]
