@@ -1,14 +1,17 @@
 import time
 from datetime import datetime
 
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+
 from image_generator import ImageGenerator
 import config
 import logging
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 from config import BOT_TOKEN
 from data import db_session
 from data.users import User
 from data.images import Image
+from keyboards import main_menu_keyboard
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -17,8 +20,35 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def generate_image(update, context):
-    prompt = " ".join(context.args)
+# Запуск генерации через кнопку "Создать изображение"
+async def start_generation(update, context):
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Отмена", callback_data="cancel_write_prompt")]])
+    await update.message.reply_text("Введите запрос", reply_markup=keyboard)
+    context.user_data['waiting_for_prompt'] = True
+
+
+# Запуск генерации изображения через команду
+async def generate_image_command(update, context):
+    context.user_data['waiting_for_prompt'] = False
+    if context.args:
+        prompt = " ".join(context.args)
+        await generate_image(prompt, update, context)
+    else:
+        await update.message.reply_text("Запрос не может быть пустым.")
+
+
+# Получить запрос из сообщения если пользователь выбрал "Создать изображение"
+async def get_prompt(update, context):
+    if context.user_data.get('waiting_for_prompt'):
+        prompt = update.message.text
+        context.user_data['waiting_for_prompt'] = False
+        await generate_image(prompt, update, context)
+    else:
+        await update.message.reply_text("Я вас не понял. Используйте меню или команды.")
+
+
+# Сама генерация изображения
+async def generate_image(prompt, update, context):
     pipeline_id = generator.get_pipeline()
     uuid = generator.generate(prompt, pipeline_id)
 
@@ -67,6 +97,7 @@ async def start(update, context):
     user = update.effective_user
     await update.message.reply_html(
         rf"Привет {user.mention_html()}! Я Galereo-бот, могу создавать изображения по запросу. Введите /help чтобы увидеть список команд.",
+        reply_markup=main_menu_keyboard
     )
 
     telegram_id = user.id
@@ -82,13 +113,41 @@ async def start(update, context):
     db_sess.close()
 
 
+async def my_images(update, context):
+    context.user_data['waiting_for_prompt'] = False
+    await update.message.reply_text("Посмотреть свои изображения")
+
+
+async def gallery(update, context):
+    context.user_data['waiting_for_prompt'] = False
+    await update.message.reply_text("Посмотреть галерею")
+
+
+# Обработчик нажатий inline кнопок
+async def button_handler(update, context):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "cancel_write_prompt":
+        context.user_data['waiting_for_prompt'] = False
+        await query.message.delete()
+
+
 def main():
     db_session.global_init("db/database.db")
 
     application = Application.builder().token(BOT_TOKEN).build()
-    application.add_handler(CommandHandler("gen", generate_image))
+    application.add_handler(CommandHandler("gen", generate_image_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("start", start))
+
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🎨 Создать изображение$'), start_generation))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🖼 Мои изображения$'), my_images))
+    application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🌍 Галерея$'), gallery))
+    application.add_handler(MessageHandler(filters.TEXT, get_prompt))
+
+    application.add_handler(CallbackQueryHandler(button_handler))
+
     application.run_polling()
 
 
