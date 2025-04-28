@@ -42,11 +42,11 @@ class ImageGenerator:
         if data['status'] == 'DONE':
             return data['result']['files']
 
-    def save_image(self, images):
+    def save_image(self, images, path):
         image_base64 = images[0]
 
         image_data = base64.b64decode(image_base64)
 
-        with open(f"data/images/image_{datetime.now().strftime("%d-%m-%Y_%H-%M")}.jpg", mode="wb+") as file:
+        with open(path, mode="wb+") as file:
             file.write(image_data)
         return image_data

@@ -1,4 +1,6 @@
 import time
+from datetime import datetime
+
 from image_generator import ImageGenerator
 import config
 import logging
@@ -6,6 +8,7 @@ from telegram.ext import Application, CommandHandler
 from config import BOT_TOKEN
 from data import db_session
 from data.users import User
+from data.images import Image
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -28,10 +31,26 @@ async def generate_image(update, context):
         await sent_message.edit_text(f"Изображение генерируется. Осталось примерно {i * delay} с.")
         time.sleep(delay)
 
-    await sent_message.delete()
-    image_bytes = generator.save_image(images)
+    await sent_message.edit_text("Изображение отправляется...")
+
+    user = update.effective_user
+    telegram_id = user.id
+    path = f"data/images/image_{telegram_id}_{datetime.now().strftime("%d-%m-%Y_%H-%M-%S")}.jpg"
+    image_bytes = generator.save_image(images, path)
+
     await context.bot.send_photo(chat_id=update.effective_chat.id, photo=image_bytes,
                                  caption=f"Изображение по запросу: {prompt}")
+    await sent_message.delete()
+
+    db_sess = db_session.create_session()
+    image = Image()
+    existing_user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
+    image.user_id = existing_user.id
+    image.path = path
+    image.prompt = prompt
+    db_sess.add(image)
+    db_sess.commit()
+    db_sess.close()
 
 
 async def help_command(update, context):
