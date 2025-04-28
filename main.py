@@ -4,6 +4,7 @@ import config
 import logging
 from telegram.ext import Application, CommandHandler
 from config import BOT_TOKEN
+from data import db_session
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -44,6 +45,8 @@ async def start(update, context):
 
 
 def main():
+    db_session.global_init("db/database.db")
+
     application = Application.builder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("gen", generate_image))
     application.add_handler(CommandHandler("help", help_command))
