@@ -39,8 +39,7 @@ async def help_command(update, context):
 async def start(update, context):
     user = update.effective_user
     await update.message.reply_html(
-        rf"Привет {user.mention_html()}! Я Galereo-бот, могу создавать изображения по запросу. \
-    Введите /help чтобы увидеть список команд.",
+        rf"Привет {user.mention_html()}! Я Galereo-бот, могу создавать изображения по запросу. Введите /help чтобы увидеть список команд.",
     )
 
 
