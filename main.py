@@ -5,6 +5,7 @@ import logging
 from telegram.ext import Application, CommandHandler
 from config import BOT_TOKEN
 from data import db_session
+from data.users import User
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -42,6 +43,18 @@ async def start(update, context):
     await update.message.reply_html(
         rf"Привет {user.mention_html()}! Я Galereo-бот, могу создавать изображения по запросу. Введите /help чтобы увидеть список команд.",
     )
+
+    telegram_id = user.id
+
+    db_sess = db_session.create_session()
+    existing_user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
+
+    if not existing_user:
+        user = User()
+        user.telegram_id = telegram_id
+        db_sess.add(user)
+        db_sess.commit()
+    db_sess.close()
 
 
 def main():
