@@ -43,11 +43,17 @@ async def generate_image(update, context):
     await sent_message.delete()
 
     db_sess = db_session.create_session()
+    user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
+    if user is None:
+        user = User()
+        user.telegram_id = telegram_id
+        db_sess.add(user)
+        db_sess.commit()
+
     image = Image()
-    existing_user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
-    image.user_id = existing_user.id
     image.path = path
     image.prompt = prompt
+    image.user_id = user.id
     db_sess.add(image)
     db_sess.commit()
     db_sess.close()
