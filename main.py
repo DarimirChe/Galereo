@@ -11,7 +11,7 @@ from config import BOT_TOKEN
 from data import db_session
 from data.users import User
 from data.images import Image
-from keyboards import main_menu_keyboard, get_my_image_keyboard
+from keyboards import main_menu_keyboard, get_my_image_keyboard, get_image_keyboard
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -68,10 +68,6 @@ async def generate_image(prompt, update, context):
     path = f"data/images/image_{telegram_id}_{datetime.now().strftime("%d-%m-%Y_%H-%M-%S")}.jpg"
     image_bytes = generator.save_image(images, path)
 
-    await context.bot.send_photo(chat_id=update.effective_chat.id, photo=image_bytes,
-                                 caption=f"Изображение по запросу: {prompt}")
-    await sent_message.delete()
-
     db_sess = db_session.create_session()
     user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
     if user is None:
@@ -86,17 +82,31 @@ async def generate_image(prompt, update, context):
     image.user_id = user.id
     db_sess.add(image)
     db_sess.commit()
+    image = db_sess.query(Image).filter(Image.user_id == user.id).first()
     db_sess.close()
+
+    context.user_data["images"] = [image]
+    context.user_data["current_index"] = 0
+
+    await context.bot.send_photo(
+        chat_id=update.effective_chat.id,
+        photo=image_bytes,
+        caption=f"Изображение по запросу: {prompt}",
+        reply_markup=get_image_keyboard(False)
+    )
+    await sent_message.delete()
 
 
 async def help_command(update, context):
-    await update.message.reply_text("/gen <запрос> -- генерация изображения по запросу.")
+    await update.message.reply_text("/gen <запрос> -- генерация изображения по запросу.\n"
+                                    "/my_images -- посмотреть свои изображения\n"
+                                    "/gallery -- посмотеть галлерею")
 
 
 async def start(update, context):
     user = update.effective_user
     await update.message.reply_html(
-        rf"Привет {user.mention_html()}! Я Galereo-бот, могу создавать изображения по запросу. Введите /help чтобы увидеть список команд.",
+        rf"Привет {user.mention_html()}! Я Galereo-бот, могу создавать изображения по запросу. Введите /help чтобы увидеть список команд или воспользуйтесь кнопками меню",
         reply_markup=main_menu_keyboard
     )
 
@@ -159,6 +169,23 @@ async def edit_my_images_message(context, query):
     )
 
 
+async def edit_image_message(context, query):
+    images = context.user_data["images"]
+    index = context.user_data["current_index"]
+    image = images[index]
+
+    with open(image.path, "rb") as f:
+        image_bytes = f.read()
+
+    await query.message.edit_media(
+        media=InputMediaPhoto(
+            media=image_bytes,
+            caption=image.prompt
+        ),
+        reply_markup=get_image_keyboard(image.is_public)
+    )
+
+
 # Обработчик нажатий inline кнопок
 async def button_handler(update, context):
     query = update.callback_query
@@ -188,7 +215,8 @@ async def button_handler(update, context):
 
     if query.data == "make_public":
         db_sess = db_session.create_session()
-        image = context.user_data['images'][context.user_data['current_index']]
+        images = context.user_data['images']
+        image = images[context.user_data['current_index']]
         image.is_public = True
         image = db_sess.query(Image).filter(Image.id == image.id).first()
         image.is_public = True
@@ -198,7 +226,8 @@ async def button_handler(update, context):
 
     if query.data == "make_private":
         db_sess = db_session.create_session()
-        image = context.user_data['images'][context.user_data['current_index']]
+        images = context.user_data['images']
+        image = images[context.user_data['current_index']]
         image.is_public = False
         image = db_sess.query(Image).filter(Image.id == image.id).first()
         image.is_public = False
@@ -222,6 +251,41 @@ async def button_handler(update, context):
             index = 0
         context.user_data['current_index'] = index
         await edit_my_images_message(context, query)
+
+    if query.data == "make_public_1":
+        db_sess = db_session.create_session()
+        images = context.user_data['images']
+        image = images[context.user_data['current_index']]
+        image.is_public = True
+        image = db_sess.query(Image).filter(Image.id == image.id).first()
+        image.is_public = True
+        db_sess.commit()
+        db_sess.close()
+        await edit_image_message(context, query)
+
+    if query.data == "make_private_1":
+        db_sess = db_session.create_session()
+        images = context.user_data['images']
+        image = images[context.user_data['current_index']]
+        image.is_public = False
+        image = db_sess.query(Image).filter(Image.id == image.id).first()
+        image.is_public = False
+        db_sess.commit()
+        db_sess.close()
+        await edit_image_message(context, query)
+
+    if query.data == "delete_1":
+        image = context.user_data['images'][context.user_data['current_index']]
+        print("Удаляем изображение: ", image.path)
+        os.remove(image.path)
+        db_sess = db_session.create_session()
+        image = db_sess.query(Image).filter(Image.id == image.id).first()
+        db_sess.delete(image)
+        db_sess.commit()
+        db_sess.close()
+        context.user_data['images'] = []
+        await query.message.delete()
+        # await edit_my_images_message(context, query)
 
 
 def main():
