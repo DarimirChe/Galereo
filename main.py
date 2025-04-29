@@ -121,7 +121,9 @@ async def my_images(update, context):
     user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
     images = db_sess.query(Image).filter(Image.user_id == user.id).all()
     db_sess.close()
-
+    if len(images) == 0:
+        await update.message.reply_text("У вас нету изображений")
+        return
     context.user_data['images'] = images
     context.user_data['current_index'] = 0
 
@@ -140,6 +142,23 @@ async def gallery(update, context):
     await update.message.reply_text("Посмотреть галерею")
 
 
+async def edit_my_images_message(context, query):
+    images = context.user_data["images"]
+    index = context.user_data["current_index"]
+    image = images[index]
+
+    with open(image.path, "rb") as f:
+        image_bytes = f.read()
+
+    await query.message.edit_media(
+        media=InputMediaPhoto(
+            media=image_bytes,
+            caption=image.prompt
+        ),
+        reply_markup=get_my_image_keyboard(image.like_count, image.dislike_count, image.is_public)
+    )
+
+
 # Обработчик нажатий inline кнопок
 async def button_handler(update, context):
     query = update.callback_query
@@ -149,41 +168,43 @@ async def button_handler(update, context):
         context.user_data['waiting_for_prompt'] = False
         await query.message.delete()
 
-    if query.data == "next" or query.data == "back":
-        context.user_data['current_index'] += 1 if query.data == "next" else -1
-        index = context.user_data['current_index']
-        images = context.user_data['images']
+    if query.data == "next":
+        context.user_data["current_index"] += 1
+        index = context.user_data["current_index"]
+        images = context.user_data["images"]
+        if index >= len(images):
+            index = 0
+        context.user_data["current_index"] = index
+        await edit_my_images_message(context, query)
+
+    if query.data == "back":
+        context.user_data["current_index"] -= 1
+        index = context.user_data["current_index"]
+        images = context.user_data["images"]
         if index < 0:
             index = len(images) - 1
-        elif index >= len(images):
-            index = 0
-        context.user_data['current_index'] = index
-        image = images[index]
+        context.user_data["current_index"] = index
+        await edit_my_images_message(context, query)
 
-        with open(image.path, 'rb') as f:
-            image_bytes = f.read()
-
-        await query.message.edit_media(
-            media=InputMediaPhoto(
-                media=image_bytes,
-                caption=image.prompt
-            ),
-            reply_markup=get_my_image_keyboard(image.like_count, image.dislike_count, image.is_public)
-        )
-
-    if query.data == "make_public" or query.data == "make_private":
+    if query.data == "make_public":
+        db_sess = db_session.create_session()
         image = context.user_data['images'][context.user_data['current_index']]
-        image.is_public = query.data == "make_public"
-        with open(image.path, 'rb') as f:
-            image_bytes = f.read()
+        image.is_public = True
+        image = db_sess.query(Image).filter(Image.id == image.id).first()
+        image.is_public = True
+        db_sess.commit()
+        db_sess.close()
+        await edit_my_images_message(context, query)
 
-        await query.message.edit_media(
-            media=InputMediaPhoto(
-                media=image_bytes,
-                caption=image.prompt
-            ),
-            reply_markup=get_my_image_keyboard(image.like_count, image.dislike_count, image.is_public)
-        )
+    if query.data == "make_private":
+        db_sess = db_session.create_session()
+        image = context.user_data['images'][context.user_data['current_index']]
+        image.is_public = False
+        image = db_sess.query(Image).filter(Image.id == image.id).first()
+        image.is_public = False
+        db_sess.commit()
+        db_sess.close()
+        await edit_my_images_message(context, query)
 
     if query.data == "delete":
         image = context.user_data['images'][context.user_data['current_index']]
@@ -197,23 +218,10 @@ async def button_handler(update, context):
         context.user_data['current_index'] += 1
         index = context.user_data['current_index']
         images = context.user_data['images']
-        if index < 0:
-            index = len(images) - 1
-        elif index >= len(images):
+        if index >= len(images):
             index = 0
         context.user_data['current_index'] = index
-        image = images[index]
-
-        with open(image.path, 'rb') as f:
-            image_bytes = f.read()
-
-        await query.message.edit_media(
-            media=InputMediaPhoto(
-                media=image_bytes,
-                caption=image.prompt
-            ),
-            reply_markup=get_my_image_keyboard(image.like_count, image.dislike_count, image.is_public)
-        )
+        await edit_my_images_message(context, query)
 
 
 def main():
@@ -224,6 +232,7 @@ def main():
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("my_images", my_images))
+    application.add_handler(CommandHandler("gallery", gallery))
 
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🎨 Создать изображение$'), start_generation))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🖼 Мои изображения$'), my_images))
