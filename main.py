@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
-
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+import os
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 
 from image_generator import ImageGenerator
 import config
@@ -11,7 +11,7 @@ from config import BOT_TOKEN
 from data import db_session
 from data.users import User
 from data.images import Image
-from keyboards import main_menu_keyboard
+from keyboards import main_menu_keyboard, get_my_image_keyboard
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -114,8 +114,25 @@ async def start(update, context):
 
 
 async def my_images(update, context):
+    user = update.effective_user
     context.user_data['waiting_for_prompt'] = False
-    await update.message.reply_text("Посмотреть свои изображения")
+    telegram_id = user.id
+    db_sess = db_session.create_session()
+    user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
+    images = db_sess.query(Image).filter(Image.user_id == user.id).all()
+    db_sess.close()
+
+    context.user_data['images'] = images
+    context.user_data['current_index'] = 0
+
+    with open(images[0].path, mode="rb") as im:
+        image_bytes = im.read()
+    my_image_keyboard = get_my_image_keyboard(images[0].like_count, images[0].dislike_count, images[0].is_public)
+    await context.bot.send_photo(
+        chat_id=update.effective_chat.id,
+        photo=image_bytes,
+        caption=images[0].prompt, reply_markup=my_image_keyboard
+    )
 
 
 async def gallery(update, context):
@@ -132,6 +149,72 @@ async def button_handler(update, context):
         context.user_data['waiting_for_prompt'] = False
         await query.message.delete()
 
+    if query.data == "next" or query.data == "back":
+        context.user_data['current_index'] += 1 if query.data == "next" else -1
+        index = context.user_data['current_index']
+        images = context.user_data['images']
+        if index < 0:
+            index = len(images) - 1
+        elif index >= len(images):
+            index = 0
+        context.user_data['current_index'] = index
+        image = images[index]
+
+        with open(image.path, 'rb') as f:
+            image_bytes = f.read()
+
+        await query.message.edit_media(
+            media=InputMediaPhoto(
+                media=image_bytes,
+                caption=image.prompt
+            ),
+            reply_markup=get_my_image_keyboard(image.like_count, image.dislike_count, image.is_public)
+        )
+
+    if query.data == "make_public" or query.data == "make_private":
+        image = context.user_data['images'][context.user_data['current_index']]
+        image.is_public = query.data == "make_public"
+        with open(image.path, 'rb') as f:
+            image_bytes = f.read()
+
+        await query.message.edit_media(
+            media=InputMediaPhoto(
+                media=image_bytes,
+                caption=image.prompt
+            ),
+            reply_markup=get_my_image_keyboard(image.like_count, image.dislike_count, image.is_public)
+        )
+
+    if query.data == "delete":
+        image = context.user_data['images'][context.user_data['current_index']]
+        os.remove(image.path)
+        db_sess = db_session.create_session()
+        image = db_sess.query(Image).filter(Image.id == image.id).first()
+        db_sess.delete(image)
+        db_sess.commit()
+        db_sess.close()
+        context.user_data['images'].pop(context.user_data['current_index'])
+        context.user_data['current_index'] += 1
+        index = context.user_data['current_index']
+        images = context.user_data['images']
+        if index < 0:
+            index = len(images) - 1
+        elif index >= len(images):
+            index = 0
+        context.user_data['current_index'] = index
+        image = images[index]
+
+        with open(image.path, 'rb') as f:
+            image_bytes = f.read()
+
+        await query.message.edit_media(
+            media=InputMediaPhoto(
+                media=image_bytes,
+                caption=image.prompt
+            ),
+            reply_markup=get_my_image_keyboard(image.like_count, image.dislike_count, image.is_public)
+        )
+
 
 def main():
     db_session.global_init("db/database.db")
@@ -140,6 +223,7 @@ def main():
     application.add_handler(CommandHandler("gen", generate_image_command))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("my_images", my_images))
 
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🎨 Создать изображение$'), start_generation))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🖼 Мои изображения$'), my_images))
