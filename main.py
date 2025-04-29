@@ -252,7 +252,7 @@ async def button_handler(update, context):
         context.user_data['current_index'] = index
         await edit_my_images_message(context, query)
 
-    if query.data == "make_public_1":
+    if query.data == "make_public_1" and False:
         db_sess = db_session.create_session()
         images = context.user_data['images']
         image = images[context.user_data['current_index']]
@@ -263,7 +263,7 @@ async def button_handler(update, context):
         db_sess.close()
         await edit_image_message(context, query)
 
-    if query.data == "make_private_1":
+    if query.data == "make_private_1" and False:
         db_sess = db_session.create_session()
         images = context.user_data['images']
         image = images[context.user_data['current_index']]
@@ -274,7 +274,7 @@ async def button_handler(update, context):
         db_sess.close()
         await edit_image_message(context, query)
 
-    if query.data == "delete_1":
+    if query.data == "delete_1" and False:
         image = context.user_data['images'][context.user_data['current_index']]
         print("Удаляем изображение: ", image.path)
         os.remove(image.path)
