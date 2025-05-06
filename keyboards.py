@@ -22,7 +22,19 @@ def get_my_image_keyboard(like_count, dislike_count, is_public, index):
             ],
             [
                 InlineKeyboardButton(public_text, callback_data=f"img_toggle:my:{index}"),
-                InlineKeyboardButton("🗑 Удалить", callback_data=f"img_delete:my:{index}")
+                InlineKeyboardButton("🗑 Удалить", callback_data=f"img_confirm_delete:my:{index}")
+            ]
+        ]
+    )
+    return keyboard
+
+
+def get_confirm_delete_keyboard(index):
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("✅ подтверждаю", callback_data=f"img_delete:my:{index}"),
+                InlineKeyboardButton("Отмена", callback_data=f"reject:my:{index}")
             ]
         ]
     )
