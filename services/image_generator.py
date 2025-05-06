@@ -83,15 +83,17 @@ async def generate_image(prompt, update, context):
     user_id = db.get_user_id(telegram_id)
     if user_id is None:
         db.add_user(telegram_id)
+
     user_id = db.get_user_id(telegram_id)
-    image = db.add_image(user_id, path, prompt)
-    context.user_data["images"] = [image]
-    context.user_data["current_index"] = 0
+
+    db.add_image(user_id, path, prompt)
+
+    image_id = sorted(db.get_my_images(user_id), key=lambda x: x.id, reverse=True)[0].id
 
     await context.bot.send_photo(
         chat_id=update.effective_chat.id,
         photo=image_bytes,
         caption=f"Изображение по запросу: {prompt}",
-        reply_markup=get_image_keyboard(False)
+        reply_markup=get_image_keyboard(False, image_id)
     )
     await sent_message.delete()

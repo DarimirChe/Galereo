@@ -40,15 +40,20 @@ async def my_images(update, context):
     user_id = db.get_user_id(telegram_id)
     images = db.get_my_images(user_id)
 
-    if len(images) == 0:
+    if not images:
         await update.message.reply_text("У вас нету изображений")
         return
-    context.user_data['images'] = images
-    context.user_data['current_index'] = 0
 
-    with open(images[0].path, mode="rb") as im:
-        image_bytes = im.read()
-    my_image_keyboard = get_my_image_keyboard(images[0].like_count, images[0].dislike_count, images[0].is_public)
+    with open(images[0].path, mode="rb") as img:
+        image_bytes = img.read()
+
+    my_image_keyboard = get_my_image_keyboard(
+        images[0].like_count,
+        images[0].dislike_count,
+        images[0].is_public,
+        0
+    )
+
     await context.bot.send_photo(
         chat_id=update.effective_chat.id,
         photo=image_bytes,

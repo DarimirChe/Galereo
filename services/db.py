@@ -25,7 +25,6 @@ def add_image(user_id, path, prompt):
         image.prompt = prompt
         db_sess.add(image)
         db_sess.commit()
-    return image
 
 
 def get_my_images(user_id):
@@ -45,3 +44,9 @@ def reverse_image_privacy(image_id):
         image = db_sess.query(Image).filter(Image.id == image_id).first()
         image.is_public = not image.is_public
         db_sess.commit()
+
+
+def get_image(image_id):
+    with db_session.create_session() as db_sess:
+        image = db_sess.query(Image).filter(Image.id == image_id).first()
+    return image
