@@ -18,7 +18,7 @@ def get_my_image_keyboard(like_count, dislike_count, is_public, index):
                 InlineKeyboardButton("⬅️ Назад", callback_data=f"img_back:my:{index}"),
                 InlineKeyboardButton(f"👍 {like_count}", callback_data="like"),
                 InlineKeyboardButton(f"👎 {dislike_count}", callback_data="dislike"),
-                InlineKeyboardButton("➡️ Вперёд", callback_data=f"img_next:my:{index}")
+                InlineKeyboardButton("Вперёд ➡️", callback_data=f"img_next:my:{index}")
             ],
             [
                 InlineKeyboardButton(public_text, callback_data=f"img_toggle:my:{index}"),
@@ -36,7 +36,7 @@ def get_gallery_keyboard(like_count, dislike_count, index):
                 InlineKeyboardButton("⬅️ Назад", callback_data=f"img_back:gallery:{index}"),
                 InlineKeyboardButton(f"👍 {like_count}", callback_data=f"img_like:gallery:{index}"),
                 InlineKeyboardButton(f"👎 {dislike_count}", callback_data=f"img_dislike:gallery:{index}"),
-                InlineKeyboardButton("➡️ Вперёд", callback_data=f"img_next:gallery:{index}")
+                InlineKeyboardButton("Вперёд ➡️", callback_data=f"img_next:gallery:{index}")
             ]
         ]
     )

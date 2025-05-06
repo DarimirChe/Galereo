@@ -1,4 +1,3 @@
-import base64
 import time
 from datetime import datetime
 
@@ -8,6 +7,7 @@ import json
 import config
 from keyboards import get_image_keyboard
 from services import db
+from utils import image_util
 
 
 class ImageGenerator:
@@ -48,14 +48,6 @@ class ImageGenerator:
         if data['status'] == 'DONE':
             return data['result']['files']
 
-    def save_image(self, images, path):
-        image_base64 = images[0]
-
-        image_data = base64.b64decode(image_base64)
-        with open(path, mode="wb+") as file:
-            file.write(image_data)
-        return image_data
-
 
 generator = ImageGenerator("https://api-key.fusionbrain.ai/", config.API_KEY, config.SECRET_KEY)
 
@@ -78,7 +70,9 @@ async def generate_image(prompt, update, context):
     user = update.effective_user
     telegram_id = user.id
     path = f"data/images/image_{telegram_id}_{datetime.now().strftime("%d-%m-%Y_%H-%M-%S")}.jpg"
-    image_bytes = generator.save_image(images, path)
+
+    image_bytes = image_util.decode_image(images[0])
+    image_util.save_image(path, image_bytes)
 
     user_id = db.get_user_id(telegram_id)
     if user_id is None:

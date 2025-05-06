@@ -27,7 +27,7 @@ async def start(update, context):
 
     telegram_id = user.id
     user = db.get_user_id(telegram_id)
-    print(user)
+
     if not user:  # если пользователя нет в БД то добавим его
         db.add_user(telegram_id)
 
@@ -85,5 +85,6 @@ async def gallery(update, context):
     await context.bot.send_photo(
         chat_id=update.effective_chat.id,
         photo=image_bytes,
-        caption=images[0].prompt, reply_markup=gallery_keyboard
+        caption=images[0].prompt,
+        reply_markup=gallery_keyboard
     )
