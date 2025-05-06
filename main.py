@@ -1,9 +1,8 @@
 import time
 from datetime import datetime
-import os
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 
-from image_generator import ImageGenerator
+from services.image_generator import generator
 import config
 import logging
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackQueryHandler
@@ -11,7 +10,11 @@ from config import BOT_TOKEN
 from data import db_session
 from data.users import User
 from data.images import Image
-from keyboards import main_menu_keyboard, get_my_image_keyboard, get_image_keyboard
+from keyboards import get_my_image_keyboard, get_image_keyboard
+
+from handlers.commands import *
+from handlers.messages import *
+from handlers.callbacks import *
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
@@ -19,14 +22,15 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-
+'''
 # Запуск генерации через кнопку "Создать изображение"
 async def start_generation(update, context):
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Отмена", callback_data="cancel_write_prompt")]])
     await update.message.reply_text("Введите запрос", reply_markup=keyboard)
     context.user_data['waiting_for_prompt'] = True
+'''
 
-
+'''
 # Запуск генерации изображения через команду
 async def generate_image_command(update, context):
     context.user_data['waiting_for_prompt'] = False
@@ -35,8 +39,9 @@ async def generate_image_command(update, context):
         await generate_image(prompt, update, context)
     else:
         await update.message.reply_text("Запрос не может быть пустым.")
+'''
 
-
+'''
 # Получить запрос из сообщения если пользователь выбрал "Создать изображение"
 async def get_prompt(update, context):
     if context.user_data.get('waiting_for_prompt'):
@@ -45,8 +50,9 @@ async def get_prompt(update, context):
         await generate_image(prompt, update, context)
     else:
         await update.message.reply_text("Я вас не понял. Используйте меню или команды.")
+'''
 
-
+'''
 # Сама генерация изображения
 async def generate_image(prompt, update, context):
     pipeline_id = generator.get_pipeline()
@@ -70,7 +76,7 @@ async def generate_image(prompt, update, context):
 
     db_sess = db_session.create_session()
     user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
-    if user is None:
+    if user is None:  # если пользователя нет в БД то добавим его
         user = User()
         user.telegram_id = telegram_id
         db_sess.add(user)
@@ -95,14 +101,15 @@ async def generate_image(prompt, update, context):
         reply_markup=get_image_keyboard(False)
     )
     await sent_message.delete()
+'''
 
-
+'''
 async def help_command(update, context):
     await update.message.reply_text("/gen <запрос> -- генерация изображения по запросу.\n"
                                     "/my_images -- посмотреть свои изображения\n"
                                     "/gallery -- посмотеть галлерею")
-
-
+'''
+'''
 async def start(update, context):
     user = update.effective_user
     await update.message.reply_html(
@@ -115,14 +122,15 @@ async def start(update, context):
     db_sess = db_session.create_session()
     existing_user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
 
-    if not existing_user:
+    if not existing_user:  # если пользователя нет в БД то добавим его
         user = User()
         user.telegram_id = telegram_id
         db_sess.add(user)
         db_sess.commit()
     db_sess.close()
+'''
 
-
+'''
 async def my_images(update, context):
     user = update.effective_user
     context.user_data['waiting_for_prompt'] = False
@@ -145,13 +153,14 @@ async def my_images(update, context):
         photo=image_bytes,
         caption=images[0].prompt, reply_markup=my_image_keyboard
     )
-
-
+'''
+'''
 async def gallery(update, context):
     context.user_data['waiting_for_prompt'] = False
     await update.message.reply_text("Посмотреть галерею")
+'''
 
-
+'''
 async def edit_my_images_message(context, query):
     images = context.user_data["images"]
     index = context.user_data["current_index"]
@@ -185,7 +194,8 @@ async def edit_image_message(context, query):
         reply_markup=get_image_keyboard(image.is_public)
     )
 
-
+'''
+'''
 # Обработчик нажатий inline кнопок
 async def button_handler(update, context):
     query = update.callback_query
@@ -252,7 +262,7 @@ async def button_handler(update, context):
         context.user_data['current_index'] = index
         await edit_my_images_message(context, query)
 
-    if query.data == "make_public_1" and False:
+    if query.data == "make_public_1" and False:  # and False это затычка, потому что в этом условии и двух следующих код не работает и выдаёт исключение
         db_sess = db_session.create_session()
         images = context.user_data['images']
         image = images[context.user_data['current_index']]
@@ -286,6 +296,7 @@ async def button_handler(update, context):
         context.user_data['images'] = []
         await query.message.delete()
         # await edit_my_images_message(context, query)
+'''
 
 
 def main():
@@ -303,11 +314,11 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🌍 Галерея$'), gallery))
     application.add_handler(MessageHandler(filters.TEXT, get_prompt))
 
-    application.add_handler(CallbackQueryHandler(button_handler))
+    application.add_handler(CallbackQueryHandler(handle_callback))
 
     application.run_polling()
 
 
 if __name__ == '__main__':
-    generator = ImageGenerator("https://api-key.fusionbrain.ai/", config.API_KEY, config.SECRET_KEY)
+    # generator = ImageGenerator("https://api-key.fusionbrain.ai/", config.API_KEY, config.SECRET_KEY)
     main()
