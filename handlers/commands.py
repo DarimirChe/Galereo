@@ -1,4 +1,4 @@
-from keyboards import get_my_image_keyboard, main_menu_keyboard
+from keyboards import get_my_image_keyboard, main_menu_keyboard, get_gallery_keyboard
 from services.image_generator import generate_image
 from services import db
 
@@ -27,7 +27,7 @@ async def start(update, context):
 
     telegram_id = user.id
     user = db.get_user_id(telegram_id)
-
+    print(user)
     if not user:  # если пользователя нет в БД то добавим его
         db.add_user(telegram_id)
 
@@ -62,5 +62,28 @@ async def my_images(update, context):
 
 
 async def gallery(update, context):
+    user = update.effective_user
     context.user_data['waiting_for_prompt'] = False
-    await update.message.reply_text("Посмотреть галерею")
+    telegram_id = user.id
+
+    user_id = db.get_user_id(telegram_id)
+    images = db.get_gallery_images(user_id)
+
+    if not images:
+        await update.message.reply_text("В галерее пусто")
+        return
+
+    with open(images[0].path, mode="rb") as img:
+        image_bytes = img.read()
+
+    gallery_keyboard = get_gallery_keyboard(
+        images[0].like_count,
+        images[0].dislike_count,
+        0
+    )
+
+    await context.bot.send_photo(
+        chat_id=update.effective_chat.id,
+        photo=image_bytes,
+        caption=images[0].prompt, reply_markup=gallery_keyboard
+    )

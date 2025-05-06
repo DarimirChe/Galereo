@@ -6,7 +6,8 @@ from data.images import Image
 def get_user_id(telegram_id):
     with db_session.create_session() as db_sess:
         user = db_sess.query(User).filter(User.telegram_id == telegram_id).first()
-    return user.id
+    if user:
+        return user.id
 
 
 def add_user(telegram_id):
@@ -35,7 +36,7 @@ def get_my_images(user_id):
 
 def get_gallery_images(user_id):
     with db_session.create_session() as db_sess:
-        images = db_sess.query(Image).filter(Image.user_id != user_id and Image.is_public).all()
+        images = db_sess.query(Image).filter((Image.user_id != user_id) & (Image.is_public == True)).all()
     return images
 
 
