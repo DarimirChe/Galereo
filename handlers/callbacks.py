@@ -1,5 +1,6 @@
 from telegram import InputMediaPhoto
 from services import db
+from utils import image_util
 from keyboards import *
 
 
@@ -32,6 +33,23 @@ async def handle_callback(update, context):
             image_id = int(data[2])
             db.reverse_image_privacy(image_id)
             await edit_image_message(context, query, image_id)
+
+    if data[0] == "img_delete":
+        if data[1] == "my":
+            telegram_id = update.effective_user.id
+            user_id = db.get_user_id(telegram_id)
+            images = db.get_my_images(user_id)
+            index = int(data[2])
+            image = images[index]
+            db.delete_image(image.id)
+            image_util.delete_image(image.path)
+            await navigate_images(update, context, +1, data[1])
+        else:
+            image_id = int(data[2])
+            image = db.get_image(image_id)
+            db.delete_image(image_id)
+            image_util.delete_image(image.path)
+            await query.message.delete()
 
 
 async def navigate_images(update, context, direction, mode):
@@ -96,7 +114,7 @@ async def edit_image_message(context, query, image_id):
     await query.message.edit_media(
         media=InputMediaPhoto(
             media=image_bytes,
-            caption=image.prompt
+            caption=f"Изображение по запросу: {image.prompt}"
         ),
         reply_markup=get_image_keyboard(image.is_public, image_id)
     )

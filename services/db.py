@@ -50,3 +50,10 @@ def get_image(image_id):
     with db_session.create_session() as db_sess:
         image = db_sess.query(Image).filter(Image.id == image_id).first()
     return image
+
+
+def delete_image(image_id):
+    with db_session.create_session() as db_sess:
+        image = db_sess.query(Image).filter(Image.id == image_id).first()
+        db_sess.delete(image)
+        db_sess.commit()
