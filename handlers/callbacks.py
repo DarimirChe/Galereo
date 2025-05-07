@@ -35,7 +35,7 @@ async def handle_callback(update, context):
             await edit_image_message(context, query, image_id)
 
     if data[0] == "img_confirm_delete":
-        confirm_delete_keyboard = get_confirm_delete_keyboard(int(data[2]))
+        confirm_delete_keyboard = get_confirm_delete_keyboard(int(data[2]), data[1])
         await query.message.reply_text("Вы точно хотите удалить это изображение?",
                                        reply_markup=confirm_delete_keyboard)
 
