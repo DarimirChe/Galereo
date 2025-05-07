@@ -61,7 +61,7 @@ def get_image_keyboard(is_public, image_id):
         [
             [
                 InlineKeyboardButton(public_text, callback_data=f"img_toggle:image:{image_id}"),
-                InlineKeyboardButton(f"🗑 Удалить", callback_data=f"img_delete:image:{image_id}")
+                InlineKeyboardButton(f"🗑 Удалить", callback_data=f"img_confirm_delete:image:{image_id}")
             ]
         ]
     )

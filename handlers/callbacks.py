@@ -37,7 +37,7 @@ async def handle_callback(update, context):
     if data[0] == "img_confirm_delete":
         if data[1] == "my":
             confirm_delete_keyboard = get_confirm_delete_keyboard(int(data[2]))
-            await update.message.reply_text("Вы точно хотите удалить это изображение?",
+            await query.message.reply_text("Вы точно хотите удалить это изображение?",
                                             reply_markup=confirm_delete_keyboard)
 
     if data[0] == "img_delete":
