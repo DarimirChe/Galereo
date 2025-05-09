@@ -49,6 +49,7 @@ async def handle_callback(update, context):
             db.delete_image(image.id)
             image_util.delete_image(image.path)
             await navigate_images(update, context, +1, data[1])
+            await query.message.delete()
         else:
             image_id = int(data[2])
             image = db.get_image(image_id)
