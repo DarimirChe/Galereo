@@ -39,6 +39,9 @@ async def handle_callback(update, context):
         await query.message.reply_text("Вы точно хотите удалить это изображение?",
                                        reply_markup=confirm_delete_keyboard)
 
+    if data[0] == 'reject':
+        await query.message.delete()
+
     if data[0] == "img_delete":
         if data[1] == "my":
             telegram_id = update.effective_user.id
