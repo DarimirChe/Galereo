@@ -29,11 +29,11 @@ def get_my_image_keyboard(like_count, dislike_count, is_public, index):
     return keyboard
 
 
-def get_confirm_delete_keyboard(index, mod):
+def get_confirm_delete_keyboard(index, mod, chat_id, message_id):
     keyboard = InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton("✅ подтверждаю", callback_data=f"img_delete:{mod}:{index}"),
+                InlineKeyboardButton("✅ подтверждаю", callback_data=f"img_delete:{mod}:{index}:{chat_id}:{message_id}"),
                 InlineKeyboardButton("Отмена", callback_data=f"reject:{mod}:{index}")
             ]
         ]

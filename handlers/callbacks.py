@@ -35,7 +35,10 @@ async def handle_callback(update, context):
             await edit_image_message(context, query, image_id)
 
     if data[0] == "img_confirm_delete":
-        confirm_delete_keyboard = get_confirm_delete_keyboard(int(data[2]), data[1])
+        chat_id = update.effective_chat.id
+        message_id = query.message.id
+        print(message_id, chat_id)
+        confirm_delete_keyboard = get_confirm_delete_keyboard(int(data[2]), data[1], chat_id, message_id)
         await query.message.reply_text("Вы точно хотите удалить это изображение?",
                                        reply_markup=confirm_delete_keyboard)
 
@@ -52,14 +55,14 @@ async def handle_callback(update, context):
             db.delete_image(image.id)
             image_util.delete_image(image.path)
             await navigate_images(update, context, +1, data[1])
-            await query.message.delete()
+            await context.bot.delete_message(chat_id=int(data[3]), message_id=int(data[4]))
         else:
             image_id = int(data[2])
             image = db.get_image(image_id)
             db.delete_image(image_id)
             image_util.delete_image(image.path)
             await query.message.delete()
-            await query.message.delete()
+            await context.bot.delete_message(chat_id=int(data[3]), message_id=int(data[4]))
 
 
 async def navigate_images(update, context, direction, mode):
