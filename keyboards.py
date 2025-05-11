@@ -10,47 +10,104 @@ main_menu_keyboard = ReplyKeyboardMarkup(
 )
 
 
-def get_my_image_keyboard(like_count, dislike_count, is_public, index):
+def get_my_image_keyboard(
+        like_count: int,
+        dislike_count: int,
+        is_public: bool,
+        index: int
+) -> InlineKeyboardMarkup:
     public_text = "🔥 Опубликовать" if not is_public else "🤫 Скрыть"
-    keyboard = InlineKeyboardMarkup(
+    return InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton("⬅️ Назад", callback_data=f"img_back:my:{index}"),
-                InlineKeyboardButton(f"👍 {like_count}", callback_data="like"),
-                InlineKeyboardButton(f"👎 {dislike_count}", callback_data="dislike"),
-                InlineKeyboardButton("Вперёд ➡️", callback_data=f"img_next:my:{index}")
+                InlineKeyboardButton(
+                    "⬅️ Назад",
+                    callback_data=f"img_back:my:{index}"
+                ),
+                InlineKeyboardButton(
+                    f"👍 {like_count}",
+                    callback_data=f"img_like:my:{index}"
+                ),
+                InlineKeyboardButton(
+                    f"👎 {dislike_count}",
+                    callback_data=f"img_dislike:my:{index}"
+                ),
+                InlineKeyboardButton(
+                    "Вперёд ➡️",
+                    callback_data=f"img_next:my:{index}"
+                )
             ],
             [
-                InlineKeyboardButton(public_text, callback_data=f"img_toggle:my:{index}"),
-                InlineKeyboardButton("🗑 Удалить", callback_data=f"img_delete:my:{index}")
-            ]
+                InlineKeyboardButton(
+                    public_text,
+                    callback_data=f"img_toggle:my:{index}"
+                ),
+                InlineKeyboardButton(
+                    "🗑 Удалить",
+                    callback_data=f"img_delete:my:{index}"
+                )
+            ],
         ]
     )
-    return keyboard
 
 
-def get_gallery_keyboard(like_count, dislike_count, index):
-    keyboard = InlineKeyboardMarkup(
+def get_gallery_keyboard(
+        like_count: int,
+        dislike_count: int,
+        index: int
+) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton("⬅️ Назад", callback_data=f"img_back:gallery:{index}"),
-                InlineKeyboardButton(f"👍 {like_count}", callback_data=f"img_like:gallery:{index}"),
-                InlineKeyboardButton(f"👎 {dislike_count}", callback_data=f"img_dislike:gallery:{index}"),
-                InlineKeyboardButton("Вперёд ➡️", callback_data=f"img_next:gallery:{index}")
+                InlineKeyboardButton(
+                    "⬅️ Назад",
+                    callback_data=f"img_back:gallery:{index}"
+                ),
+                InlineKeyboardButton(
+                    f"👍 {like_count}",
+                    callback_data=f"img_like:gallery:{index}"
+                ),
+                InlineKeyboardButton(
+                    f"👎 {dislike_count}",
+                    callback_data=f"img_dislike:gallery:{index}"
+                ),
+                InlineKeyboardButton(
+                    "Вперёд ➡️",
+                    callback_data=f"img_next:gallery:{index}"
+                )
             ]
         ]
     )
-    return keyboard
 
 
-def get_image_keyboard(is_public, image_id):
+def get_image_keyboard(
+        like_count: int,
+        dislike_count: int,
+        is_public: bool,
+        image_id: int
+) -> InlineKeyboardMarkup:
     public_text = "🔥 Опубликовать" if not is_public else "🤫 Скрыть"
-    image_keyboard = InlineKeyboardMarkup(
+    return InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton(public_text, callback_data=f"img_toggle:image:{image_id}"),
-                InlineKeyboardButton(f"🗑 Удалить", callback_data=f"img_delete:image:{image_id}")
+                InlineKeyboardButton(
+                    f"👍 {like_count}",
+                    callback_data=f"img_like:image:{image_id}"
+                ),
+                InlineKeyboardButton(
+                    f"👎 {dislike_count}",
+                    callback_data=f"img_dislike:image:{image_id}"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    public_text,
+                    callback_data=f"img_toggle:image:{image_id}"
+                ),
+                InlineKeyboardButton(
+                    "🗑 Удалить",
+                    callback_data=f"img_delete:image:{image_id}"
+                )
             ]
         ]
     )
-    return image_keyboard
