@@ -97,13 +97,13 @@ async def handle_callback(update, context):
     if action == "img_delete":
         mode = data[1]
         if mode == "my":
+            await navigate_images(update, context, +1, "my")
             user_id = db.get_user_id(update.effective_user.id)
             images = db.get_my_images(user_id)
             idx = int(data[2])
             image = images[idx]
             db.delete_image(image.id)
             image_util.delete_image(image.path)
-            await navigate_images(update, context, +1, "my")
         else:
             if mode == "gallery":
                 image_id = db.get_gallery_images(db.get_user_id(update.effective_user.id))[int(data[2])].id
