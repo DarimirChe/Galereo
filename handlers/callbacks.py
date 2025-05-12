@@ -83,6 +83,16 @@ async def handle_callback(update, context):
             await edit_image_message(context, query, image_id)
         return
 
+    if data[0] == "img_confirm_delete":
+        chat_id = update.effective_chat.id
+        message_id = query.message.id
+        confirm_delete_keyboard = get_confirm_delete_keyboard(int(data[2]), data[1], chat_id, message_id)
+        await query.message.reply_text("Вы точно хотите удалить это изображение?",
+                                       reply_markup=confirm_delete_keyboard)
+
+    if data[0] == 'reject':
+        await query.message.delete()
+
     if action == "img_delete":
         mode = data[1]
         if mode == "my":
@@ -102,25 +112,27 @@ async def handle_callback(update, context):
             db.delete_image(image_id)
             image_util.delete_image(image.path)
             await query.message.delete()
+            await context.bot.delete_message(chat_id=int(data[3]), message_id=int(data[4]))
         return
 
 
 async def navigate_images(update, context, direction, mode):
     query = update.callback_query
-    tg_id = update.effective_user.id
-    user_id = db.get_user_id(tg_id)
+    telegram_id = update.effective_user.id
+    user_id = db.get_user_id(telegram_id)
 
     if mode == "my":
         images = db.get_my_images(user_id)
     else:
         images = db.get_gallery_images(user_id)
 
-    idx = (int(query.data.split(":")[2]) + direction) % len(images)
+    index = int(query.data.split(":")[2]) + direction
+    index %= len(images)
 
     if mode == "my":
-        await edit_my_images_message(context, query, idx, images[idx])
+        await edit_my_images_message(context, query, index, images[index])
     else:
-        await edit_gallery_message(context, query, idx, images[idx])
+        await edit_gallery_message(context, query, index, images[index])
 
 
 async def edit_my_images_message(context, query, index, image):

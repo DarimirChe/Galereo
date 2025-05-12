@@ -44,11 +44,23 @@ def get_my_image_keyboard(
                 ),
                 InlineKeyboardButton(
                     "🗑 Удалить",
-                    callback_data=f"img_delete:my:{index}"
+                    callback_data=f"img_confirm_delete:my:{index}"
                 )
             ],
         ]
     )
+
+
+def get_confirm_delete_keyboard(index, mod, chat_id, message_id):
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton("✅ подтверждаю", callback_data=f"img_delete:{mod}:{index}:{chat_id}:{message_id}"),
+                InlineKeyboardButton("Отмена", callback_data=f"reject:{mod}:{index}")
+            ]
+        ]
+    )
+    return keyboard
 
 
 def get_gallery_keyboard(
@@ -106,7 +118,7 @@ def get_image_keyboard(
                 ),
                 InlineKeyboardButton(
                     "🗑 Удалить",
-                    callback_data=f"img_delete:image:{image_id}"
+                    callback_data=f"img_confirm_delete:image:{image_id}"
                 )
             ]
         ]
