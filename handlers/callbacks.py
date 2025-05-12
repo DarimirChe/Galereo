@@ -37,7 +37,6 @@ async def handle_callback(update, context):
     if data[0] == "img_confirm_delete":
         chat_id = update.effective_chat.id
         message_id = query.message.id
-        print(message_id, chat_id)
         confirm_delete_keyboard = get_confirm_delete_keyboard(int(data[2]), data[1], chat_id, message_id)
         await query.message.reply_text("Вы точно хотите удалить это изображение?",
                                        reply_markup=confirm_delete_keyboard)
