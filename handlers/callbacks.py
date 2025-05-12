@@ -4,7 +4,8 @@ from utils import image_util
 from keyboards import (
     get_my_image_keyboard,
     get_gallery_keyboard,
-    get_image_keyboard
+    get_image_keyboard,
+    get_confirm_delete_keyboard
 )
 
 
