@@ -27,7 +27,7 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🎨 Создать изображение$'), start_generation))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🖼 Мои изображения$'), my_images))
     application.add_handler(MessageHandler(filters.TEXT & filters.Regex('^🌍 Галерея$'), gallery))
-    application.add_handler(MessageHandler(filters.TEXT, get_prompt))
+    application.add_handler(MessageHandler(filters.TEXT | filters.Document.FileExtension("txt"), get_prompt))
 
     application.add_handler(CallbackQueryHandler(handle_callback))
 
